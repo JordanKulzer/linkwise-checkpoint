@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Linkwise is checking this link</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; padding: 24px; font-family: -apple-system, system-ui, sans-serif; background: #111; color: #eee; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    .v { position: fixed; top: 8px; right: 12px; font-size: 12px; opacity: .6; }
+    .mono { font-family: ui-monospace, Menlo, monospace; font-size: 13px; word-break: break-all; white-space: pre-wrap; }
+    .box { border: 1px solid #444; border-radius: 10px; padding: 12px; margin: 12px 0; }
+    .muted { opacity: .7; font-size: 13px; }
+    #slow { display: none; }
+    button { display: block; width: 100%; padding: 14px; margin: 8px 0; font-size: 17px; border-radius: 10px; border: 1px solid #888; background: #333; color: #eee; }
+  </style>
+</head>
+<body>
+  <div class="v" id="version">v1</div>
+  <h1>Linkwise is checking this link…</h1>
+  <p class="muted">Hold on a moment. This page is part of the Linkwise Safari extension. It never sends the link anywhere; the link stays on your phone, in this page's address after the #.</p>
+
+  <div class="box">
+    <div class="muted">Link being checked (from this page's address, never sent to a server)</div>
+    <div id="target" class="mono">(none)</div>
+  </div>
+
+  <div id="slow">
+    <div class="box">
+      <div class="muted">Linkwise could not take over this page.</div>
+      <p>The Linkwise extension did not respond. The link above has <b>not</b> been opened. You can copy it, or close this tab.</p>
+      <button id="copy">Copy link</button>
+      <div id="copied" class="muted"></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="muted">Diagnostics (shown on this page only)</div>
+    <div id="diag" class="mono"></div>
+  </div>
+
+  <script>
+    // No network, no storage, no third-party code. Everything below is local to this page.
+    (function () {
+      var t0 = performance.now();
+      var hash = location.hash ? location.hash.slice(1) : "";
+      var target = "";
+      try { target = decodeURIComponent(hash); } catch (e) { target = hash; }
+      if (!/^https?:\/\//i.test(target)) target = "";
+      document.getElementById("target").textContent = target || "(none)";
+
+      var sw = "n/a";
+      if ("serviceWorker" in navigator) {
+        sw = navigator.serviceWorker.controller ? "controlled by service worker (served from cache)" : "no controller (served from network)";
+        navigator.serviceWorker.register("/sw.js").then(function (r) {
+          sw += " · registered " + (r.active ? "active" : r.installing ? "installing" : r.waiting ? "waiting" : "?");
+          render();
+        }).catch(function (e) { sw += " · register failed: " + e; render(); });
+      }
+
+      function render() {
+        document.getElementById("diag").textContent =
+          "version: " + document.getElementById("version").textContent + "\n" +
+          "referrer: " + (document.referrer || "(empty)") + "\n" +
+          "service worker: " + sw + "\n" +
+          "online: " + navigator.onLine + "\n" +
+          "ms since page start: " + Math.round(performance.now()) + "\n" +
+          "handoff: " + handoff;
+      }
+      var handoff = "waiting for the extension (content script) …";
+      render();
+
+      // If nothing has taken over after 2 s, show the fallback.
+      setTimeout(function () {
+        handoff = "no takeover after 2 s";
+        document.getElementById("slow").style.display = "block";
+        render();
+      }, 2000);
+
+      document.getElementById("copy").onclick = function () {
+        navigator.clipboard.writeText(target).then(function () {
+          document.getElementById("copied").textContent = "Copied.";
+        }, function () {
+          document.getElementById("copied").textContent = "Could not copy; long-press the link text above.";
+        });
+      };
+
+      setInterval(render, 1000);
+    })();
+  </script>
+</body>
+</html>
