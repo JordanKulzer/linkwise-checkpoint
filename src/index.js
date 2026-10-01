@@ -17,7 +17,9 @@ export default {
         headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
       });
     }
-    // Any other unmatched path: let the assets router answer (404 page).
-    return env.ASSETS.fetch(request);
+    // Any other unmatched path: serve the custom 404 page ourselves (not_found_handling is "none"
+    // so that this script is reached at all; see Cloudflare's wrangler reference).
+    const nf = await env.ASSETS.fetch(new Request(new URL("/404.html", request.url), { method: "GET" }));
+    return new Response(nf.body, { status: 404, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
 };
