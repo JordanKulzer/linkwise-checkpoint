@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <div class="v" id="version">v1b</div>
+  <div class="v" id="version">v2</div>
   <h1>Linkwise is checking this link…</h1>
   <p class="muted">Hold on a moment. This page is part of the Linkwise Safari extension. It never sends the link anywhere; the link stays on your phone, in this page's address after the #.</p>
 
@@ -66,11 +66,42 @@
           "referrer: " + (document.referrer || "(empty)") + "\n" +
           "service worker: " + sw + "\n" +
           "online: " + navigator.onLine + "\n" +
+          "externally_connectable attempt: " + ext + "\n" +
           "ms since page start: " + Math.round(performance.now()) + "\n" +
           "handoff: " + handoff;
       }
-      var handoff = "waiting for the extension (content script) …";
+      var handoff = "waiting for the extension …";
+      var ext = "not attempted";
       render();
+
+      // Handoff H2: ask the extension via externally_connectable. The page cannot know the extension's
+      // id for sure; it tries the likely ids and reports what Safari says. The reply is used only if it
+      // is an extension URL for checkpoint.html.
+      (function tryExternal() {
+        var rt = (window.browser && window.browser.runtime) || (window.chrome && window.chrome.runtime);
+        if (!rt || typeof rt.sendMessage !== "function") {
+          ext = "no runtime.sendMessage on this page (window.browser=" + typeof window.browser + ", window.chrome=" + typeof window.chrome + ")";
+          render(); return;
+        }
+        var ids = ["com.jordankulzer.linkwise-spike.Extension", "com.jordankulzer.linkwise-spike"];
+        var results = [];
+        ids.forEach(function (id) {
+          try {
+            var done = function (resp) {
+              var err = rt.lastError && rt.lastError.message;
+              results.push(id + " → " + (err ? ("error: " + err) : JSON.stringify(resp)));
+              ext = results.join(" | "); render();
+              if (resp && resp.ok && typeof resp.checkpoint === "string" && /^safari-web-extension:\/\/[^\/]+\/checkpoint\.html#/.test(resp.checkpoint)) {
+                handoff = "H2 reply accepted, navigating"; render();
+                location.replace(resp.checkpoint);
+              }
+            };
+            var p = rt.sendMessage(id, { type: "hosted-handoff", url: target }, done);
+            if (p && typeof p.then === "function") p.then(done, function (e) { results.push(id + " → rejected: " + e); ext = results.join(" | "); render(); });
+          } catch (e) { results.push(id + " → threw: " + e); ext = results.join(" | "); render(); }
+        });
+        ext = "sent to " + ids.length + " candidate ids, waiting…"; render();
+      })();
 
       // If nothing has taken over after 2 s, show the fallback.
       setTimeout(function () {

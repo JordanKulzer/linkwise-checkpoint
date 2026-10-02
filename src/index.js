@@ -17,6 +17,11 @@ export default {
         headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
       });
     }
+    // TEMPORARY, test-only: simulated server failure for the outage test (Experiment 3).
+    if (url.pathname.startsWith("/outage/")) {
+      return new Response("<!doctype html><meta charset=utf-8><title>503</title><body style=\"font-family:system-ui;padding:24px;background:#111;color:#eee\"><h1>503 Service Unavailable</h1><p>Simulated outage of the Linkwise checkpoint host (test only).</p>",
+        { status: 503, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "retry-after": "60" } });
+    }
     // Any other unmatched path: serve the custom 404 page ourselves (not_found_handling is "none"
     // so that this script is reached at all; see Cloudflare's wrangler reference).
     const nf = await env.ASSETS.fetch(new Request(new URL("/404.html", request.url), { method: "GET" }));
