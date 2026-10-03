@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <div class="v" id="version">v2</div>
+  <div class="v" id="version">v3</div>
   <h1>Linkwise is checking this link…</h1>
   <p class="muted">Hold on a moment. This page is part of the Linkwise Safari extension. It never sends the link anywhere; the link stays on your phone, in this page's address after the #.</p>
 
@@ -53,7 +53,7 @@
 
       var sw = "n/a";
       if ("serviceWorker" in navigator) {
-        sw = navigator.serviceWorker.controller ? "controlled by service worker (served from cache)" : "no controller (served from network)";
+        sw = navigator.serviceWorker.controller ? "page is controlled by a service worker (it does not answer navigations; this page came from HTTP cache or network)" : "no controller";
         navigator.serviceWorker.register("/sw.js").then(function (r) {
           sw += " · registered " + (r.active ? "active" : r.installing ? "installing" : r.waiting ? "waiting" : "?");
           render();
