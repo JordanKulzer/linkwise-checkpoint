@@ -6,5 +6,5 @@ Served by a Cloudflare Worker with static assets. No analytics, no logging, no t
 - `public/checkpoint.html` — the page. It reads the link from its own URL fragment (`#https://…`), which browsers never send to the server.
 - `public/sw.js` — service worker that caches the page so later visits do not contact the host (cache test).
 - `public/_headers` — long `Cache-Control` for the page (cache test).
-- `src/index.js` — runs only for paths with no static file. `/outage/*` returns a simulated 503 (test only). Contains the TEMPORARY `/echo-headers` test endpoint (returns the request headers to the requester, stores nothing). Delete after the Referer test.
+- `src/index.js` — runs only for paths with no static file; serves the 404 page. The temporary `/echo-headers` and `/outage` test endpoints were removed after the spike.
 - `wrangler.jsonc` — Worker configuration.
